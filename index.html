@@ -19,7 +19,7 @@
         body { font-family: 'Inter', sans-serif; }
         .tooltip-label { position: relative; cursor: help; display: inline-flex; align-items: center; }
         .tooltip-trigger { display: inline-block; margin-left: 5px; font-weight: bold; color: #fff; background-color: #9ca3af; border-radius: 50%; width: 18px; height: 18px; text-align: center; line-height: 18px; font-size: 12px; flex-shrink: 0; }
-        .tooltip-text { visibility: hidden; width: 280px; background-color: #374151; color: #fff; text-align: left; border-radius: 6px; padding: 10px; position: absolute; z-index: 10; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-weight: normal; font-size: 0.9rem; pointer-events: none; }
+        .tooltip-text { visibility: hidden; width: 280px; background-color: #374151; color: #fff; text-align: left; border-radius: 6px; padding: 12px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-weight: normal; font-size: 0.9rem; pointer-events: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); white-space: normal; line-height: 1.4; }
         .tooltip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #374151 transparent transparent transparent; }
         .tooltip-label:hover .tooltip-text { visibility: visible; opacity: 1; }
         .chart-container { position: relative; width: 100%; height: 350px; max-height: 50vh; max-width: 1100px; margin: 0 auto; }
@@ -39,15 +39,30 @@
             border-color: #6366f1;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
+        .input-unit {
+            display: inline-block;
+            margin-left: 4px;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .input-group label {
+            flex: 1;
+            white-space: nowrap;
+        }
+        .input-group .input-wrapper {
+            display: flex;
+            align-items: center;
+        }
         .card-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
         @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (min-width: 1280px) { .card-grid { grid-template-columns: repeat(4, 1fr); } }
         .input-area-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
         @media (min-width: 640px) { .input-area-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem;} }
-        .input-group { display: grid; grid-template-columns: auto 1fr; gap-x: 3px; gap-y: 2px; align-items: center; }
-        .input-group label { grid-column: 1 / 2; text-align: left; white-space: nowrap; }
-        .input-group input { grid-column: 2 / 3; justify-self: end; }
-        .input-grid { display: grid; grid-template-columns: auto auto; gap: 0.5rem; align-items: center; }
         .phase-card { transition: all 0.3s ease; }
         .phase-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
         .global-settings {
@@ -215,15 +230,39 @@
                              <div>
                                 <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">Goals & Deliverables (Quarterly)</h4>
                                 <div class="input-grid text-sm">
-                                    <label class="tooltip-label" for="inferences-${key}">AI Motions<span class="tooltip-trigger">?</span><span class="tooltip-text">Quarterly goal for the number of AI-generated motions.</span></label><input type="number" min="0" id="inferences-${key}" value="${d.quarterlyInferences}" class="input-sm">
-                                    <label class="tooltip-label" for="trainings-${key}">Model Trainings<span class="tooltip-trigger">?</span><span class="tooltip-text">Quarterly goal for the number of model retraining runs.</span></label><input type="number" min="0" id="trainings-${key}" value="${d.quarterlyTrainings}" class="input-sm">
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="inferences-${key}">AI Motions<span class="tooltip-trigger">?</span><span class="tooltip-text">Quarterly goal for the number of AI-generated motions.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="inferences-${key}" value="${d.quarterlyInferences}" class="input-sm">
+                                            <span class="input-unit">motions</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="trainings-${key}">Model Trainings<span class="tooltip-trigger">?</span><span class="tooltip-text">Quarterly goal for the number of model retraining runs.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="trainings-${key}" value="${d.quarterlyTrainings}" class="input-sm">
+                                            <span class="input-unit">runs</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">One-Time Asset Purchase</h4>
                                  <div class="input-grid text-sm">
-                                    <label class="tooltip-label" for="onetime_dance-${key}">Dance Library<span class="tooltip-trigger">?</span><span class="tooltip-text">One-time purchase of dance motion assets for this quarter.</span></label><input type="number" min="0" id="onetime_dance-${key}" value="${d.oneTimeDance}" class="input-sm">
-                                    <label class="tooltip-label" for="onetime_speech-${key}">Speech Library<span class="tooltip-trigger">?</span><span class="tooltip-text">One-time purchase of speech motion assets for this quarter.</span></label><input type="number" min="0" id="onetime_speech-${key}" value="${d.oneTimeSpeech}" class="input-sm">
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="onetime_dance-${key}">Dance Library<span class="tooltip-trigger">?</span><span class="tooltip-text">One-time purchase of dance motion assets for this quarter.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="onetime_dance-${key}" value="${d.oneTimeDance}" class="input-sm">
+                                            <span class="input-unit">USD</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="onetime_speech-${key}">Speech Library<span class="tooltip-trigger">?</span><span class="tooltip-text">One-time purchase of speech motion assets for this quarter.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="onetime_speech-${key}" value="${d.oneTimeSpeech}" class="input-sm">
+                                            <span class="input-unit">USD</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -231,18 +270,60 @@
                              <div>
                                 <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">AI & HR Unit Costs (Monthly)</h4>
                                 <div class="input-grid text-sm">
-                                    <label class="tooltip-label" for="video_service-${key}">Video Service<span class="tooltip-trigger">?</span><span class="tooltip-text">Monthly fee for the AI video generation service.</span></label><input type="number" id="video_service-${key}" value="${d.monthlyVideoService}" class="input-sm">
-                                    <label class="tooltip-label" for="training_cost-${key}">Cost/Training<span class="tooltip-trigger">?</span><span class="tooltip-text">GPU cost for a single training cycle.</span></label><input type="number" id="training_cost-${key}" value="${d.costPerTraining}" class="input-sm">
-                                    <label class="tooltip-label" for="inference_cost-${key}">Cost/Inference<span class="tooltip-trigger">?</span><span class="tooltip-text">GPU cost to generate one motion.</span></label><input type="number" id="inference_cost-${key}" value="${d.costPerInference}" step="0.0001" class="input-sm">
-                                    <label class="tooltip-label" for="inhouse_salary-${key}">In-house Salary<span class="tooltip-trigger">?</span><span class="tooltip-text">Average monthly salary per person.</span></label><input type="number" id="inhouse_salary-${key}" value="${d.inHouseSalary}" class="input-sm">
-                                    <label class="tooltip-label" for="outsourced_salary-${key}">Outsourced Fee<span class="tooltip-trigger">?</span><span class="tooltip-text">Average monthly fee per contractor.</span></label><input type="number" id="outsourced_salary-${key}" value="${d.outsourcedSalary}" class="input-sm">
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="video_service-${key}">Video Service<span class="tooltip-trigger">?</span><span class="tooltip-text">Monthly fee for the AI video generation service.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="video_service-${key}" value="${d.monthlyVideoService}" class="input-sm">
+                                            <span class="input-unit">USD</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="training_cost-${key}">Cost/Training<span class="tooltip-trigger">?</span><span class="tooltip-text">GPU cost for a single training cycle.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="training_cost-${key}" value="${d.costPerTraining}" class="input-sm">
+                                            <span class="input-unit">USD</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="inference_cost-${key}">Cost/Inference<span class="tooltip-trigger">?</span><span class="tooltip-text">GPU cost to generate one motion.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="inference_cost-${key}" value="${d.costPerInference}" step="0.0001" class="input-sm">
+                                            <span class="input-unit">USD</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="inhouse_salary-${key}">In-house Salary<span class="tooltip-trigger">?</span><span class="tooltip-text">Average monthly salary per person.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="inhouse_salary-${key}" value="${d.inHouseSalary}" class="input-sm">
+                                            <span class="input-unit">USD</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="outsourced_salary-${key}">Outsourced Fee<span class="tooltip-trigger">?</span><span class="tooltip-text">Average monthly fee per contractor.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="outsourced_salary-${key}" value="${d.outsourcedSalary}" class="input-sm">
+                                            <span class="input-unit">USD</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                              <div>
                                 <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">HR Headcount (Monthly)</h4>
                                 <div class="input-grid text-sm">
-                                    <label class="tooltip-label" for="inhouse_count-${key}">In-house Staff<span class="tooltip-trigger">?</span><span class="tooltip-text">Number of full-time employees.</span></label><input type="number" id="inhouse_count-${key}" value="${d.inHouseCount}" class="input-sm">
-                                    <label class="tooltip-label" for="outsourced_count-${key}">Outsourced Staff<span class="tooltip-trigger">?</span><span class="tooltip-text">Number of external contractors.</span></label><input type="number" id="outsourced_count-${key}" value="${d.outsourcedCount}" class="input-sm">
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="inhouse_count-${key}">In-house Staff<span class="tooltip-trigger">?</span><span class="tooltip-text">Number of full-time employees.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="inhouse_count-${key}" value="${d.inHouseCount}" class="input-sm">
+                                            <span class="input-unit">people</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="tooltip-label" for="outsourced_count-${key}">Outsourced Staff<span class="tooltip-trigger">?</span><span class="tooltip-text">Number of external contractors.</span></label>
+                                        <div class="input-wrapper">
+                                            <input type="number" min="0" id="outsourced_count-${key}" value="${d.outsourcedCount}" class="input-sm">
+                                            <span class="input-unit">people</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
