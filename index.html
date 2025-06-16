@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotionGPT Strategic Roadmap Simulator</title>
+    <!-- Chosen Palette: "Cool Blues and Warm Neutrals" -->
+    <!-- Application Structure Plan: The SPA has been redesigned to integrate live inputs directly into each quarterly phase card. This removes the top-level control panel in favor of localized controls, allowing for independent cost simulation for each phase. A main bar chart at the top visualizes the outputs from these localized controls, providing a dynamic comparative overview. This structure was chosen to give users maximum flexibility and precision in modeling the distinct financial characteristics of each project phase (e.g., POC vs. Scaling), making the simulation more powerful and realistic. -->
+    <!-- Visualization & Content Choices: 
+        - Localized Live Inputs (HTML Forms): Goal: Simulate. Method: Number inputs placed within each of the four phase-specific cards. Interaction: User changes values within a specific quarter's card. Justification: This is the core interactive change, enabling detailed, phase-by-phase "what-if" analysis instead of relying on a single baseline.
+        - Tooltips (HTML/CSS): Goal: Inform. Method: Hover-activated text boxes on both inputs and calculated results. Interaction: Hover over labels. Justification: Provides necessary context for each input and calculation logic.
+        - Comparative Bar Chart (Chart.js/Canvas): Goal: Compare. Method: A single, responsive bar chart at the top of the page. Interaction: Data updates in real-time based on changes in ANY of the quarterly input cards. Justification: Offers the most effective and immediate visual summary of the cost implications across all project phases.
+        - Dynamic Text Blocks (HTML/JS): Goal: Inform/Synthesize. Method: Four side-by-side cards containing both static text (objectives) and dynamic elements (inputs and calculated totals). Interaction: The total cost for each card updates live as its internal values are changed. Justification: Creates self-contained simulation modules for each project phase. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tooltip-label { position: relative; cursor: help; display: inline-flex; align-items: center; }
+        .tooltip-trigger { display: inline-block; margin-left: 5px; font-weight: bold; color: #fff; background-color: #9ca3af; border-radius: 50%; width: 18px; height: 18px; text-align: center; line-height: 18px; font-size: 12px; flex-shrink: 0; }
+        .tooltip-text { visibility: hidden; width: 280px; background-color: #374151; color: #fff; text-align: left; border-radius: 6px; padding: 10px; position: absolute; z-index: 10; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-weight: normal; font-size: 0.9rem; pointer-events: none; }
+        .tooltip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #374151 transparent transparent transparent; }
+        .tooltip-label:hover .tooltip-text { visibility: visible; opacity: 1; }
+        .chart-container { position: relative; width: 100%; height: 350px; max-height: 50vh; max-width: 1100px; margin: 0 auto; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        @media (min-width: 1024px) { .chart-container { height: 400px; } }
+        .input-sm { 
+            width: 80px; 
+            padding: 4px 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 4px; 
+            text-align: right; 
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease;
+        }
+        .input-sm:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        .card-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1280px) { .card-grid { grid-template-columns: repeat(4, 1fr); } }
+        .input-area-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        @media (min-width: 640px) { .input-area-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem;} }
+        .input-group { display: grid; grid-template-columns: auto 1fr; gap-x: 3px; gap-y: 2px; align-items: center; }
+        .input-group label { grid-column: 1 / 2; text-align: left; white-space: nowrap; }
+        .input-group input { grid-column: 2 / 3; justify-self: end; }
+        .input-grid { display: grid; grid-template-columns: auto auto; gap: 0.5rem; align-items: center; }
+        .phase-card { transition: all 0.3s ease; }
+        .phase-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
+        .global-settings {
+            background: linear-gradient(to right, #f0f9ff, #e6f7ff);
+            border-top: 3px solid #60a5fa;
+            transition: all 0.3s ease;
+        }
+        .global-settings:hover {
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        }
+        select {
+            padding: 4px 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 4px;
+            background-color: white;
+            transition: border-color 0.2s ease;
+        }
+        select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-6 lg:p-8 fade-in">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">MotionGPT Strategic Roadmap Simulator</h1>
+            <p class="text-lg text-gray-600 mt-2">Interactively explore project costs from 2025 Q3 to 2026 Q2</p>
+        </header>
+        
+        <!-- Global Settings -->
+        <section class="global-settings p-4 rounded-2xl shadow-lg border border-gray-200 mb-10 max-w-lg mx-auto">
+             <h2 class="text-xl font-bold text-center mb-4 text-indigo-700">Global Settings</h2>
+             <div class="flex flex-col md:flex-row justify-around items-center gap-4">
+                 <div class="flex items-center gap-4">
+                    <label class="tooltip-label" for="currency-selector">Display Currency<span class="tooltip-trigger">?</span><span class="tooltip-text">Select the display currency for all cost estimates.</span></label>
+                    <select id="currency-selector" class="p-1 border rounded"><option value="USD">USD</option><option value="TWD">TWD</option></select>
+                </div>
+                 <div class="flex items-center gap-4">
+                    <label class="tooltip-label" for="exchange_rate">Exchange Rate<span class="tooltip-trigger">?</span><span class="tooltip-text">Conversion rate from 1 USD to TWD.</span></label>
+                    <input type="number" id="exchange_rate" value="32.00" step="0.01" class="w-24 p-1 border rounded text-right">
+                </div>
+             </div>
+        </section>
+
+        <!-- Roadmap Overview Section -->
+        <section>
+            <h2 class="text-2xl font-bold text-center mb-6 text-indigo-700">Roadmap Overview & Cost Projections</h2>
+            <div class="bg-white p-4 md:p-6 rounded-2xl shadow-lg border border-gray-200 mb-8">
+                <div class="chart-container">
+                    <canvas id="roadmapChart"></canvas>
+                </div>
+            </div>
+
+            <div id="roadmap-cards-container" class="card-grid">
+                <!-- Quarterly Cards will be injected by JS -->
+            </div>
+        </section>
+
+        <footer class="text-center mt-12 text-sm text-gray-500">
+            <p>&copy; 2025 MotionGPT Project Team. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        const roadmapCardsContainer = document.getElementById('roadmap-cards-container');
+        let roadmapChart;
+
+        const roadmapData = {
+            '2025-q3': {
+                phase: 'Phase 1: Proof of Concept',
+                strategy: [
+                    "<strong>Focus:</strong> Validate the core technology pipeline at a small, manageable scale.",
+                    "<strong>Task:</strong> Involves focused R&D, establishing foundational workflows, and gathering initial data.",
+                    "<strong>Goal:</strong> Prove technical feasibility and understand resource needs before committing to larger investments."
+                ],
+                borderColor: 'border-blue-500',
+                defaults: {
+                    quarterlyInferences: 600, quarterlyTrainings: 0,
+                    costPerTraining: 300, costPerInference: 0.0415,
+                    monthlyVideoService: 500,
+                    inHouseCount: 1, inHouseSalary: 2000,
+                    outsourcedCount: 2, outsourcedSalary: 1200,
+                    oneTimeDance: 150, oneTimeSpeech: 150
+                }
+            },
+            '2025-q4': {
+                phase: 'Phase 2: Baseline Production',
+                strategy: [
+                    "<strong>Focus:</strong> Transition from R&D to a stable, full-scale operational workflow.",
+                    "<strong>Task:</strong> Establish a reliable production baseline, build a foundational motion library, and formalize the team structure.",
+                    "<strong>Goal:</strong> Achieve consistent, predictable output and prepare for future scaling."
+                ],
+                borderColor: 'border-indigo-500',
+                defaults: {
+                    quarterlyInferences: 3000, quarterlyTrainings: 3,
+                    costPerTraining: 300, costPerInference: 0.0415,
+                    monthlyVideoService: 2000,
+                    inHouseCount: 4, inHouseSalary: 2000,
+                    outsourcedCount: 4, outsourcedSalary: 2500,
+                    oneTimeDance: 3000, oneTimeSpeech: 3000
+                }
+            },
+            '2026-q1': {
+                phase: 'Phase 3: Production Scaling',
+                strategy: [
+                    "<strong>Focus:</strong> Aggressively increase production throughput with a validated pipeline.",
+                    "<strong>Task:</strong> Invest in more AI capacity, expand the team, and accelerate the growth of the motion library.",
+                    "<strong>Goal:</strong> Build a comprehensive asset base and support a larger number of dependent projects."
+                ],
+                borderColor: 'border-purple-500',
+                defaults: {
+                    quarterlyInferences: 4500, quarterlyTrainings: 6,
+                    costPerTraining: 300, costPerInference: 0.0415,
+                    monthlyVideoService: 2600,
+                    inHouseCount: 5, inHouseSalary: 2100,
+                    outsourcedCount: 5, outsourcedSalary: 2600,
+                    oneTimeDance: 0, oneTimeSpeech: 0
+                }
+            },
+            '2026-q2': {
+                phase: 'Phase 4: Automation & Optimization',
+                strategy: [
+                    "<strong>Focus:</strong> Leverage mature AI models, trained on extensive data from prior quarters.",
+                    "<strong>Task:</strong> Shift investment from high-cost manual labor to more advanced automation, increasing AI-driven output.",
+                    "<strong>Goal:</strong> Reduce human intervention and lower the overall cost-per-motion, achieving higher efficiency."
+                ],
+                borderColor: 'border-green-500',
+                defaults: {
+                    quarterlyInferences: 7500, quarterlyTrainings: 6,
+                    costPerTraining: 300, costPerInference: 0.0415,
+                    monthlyVideoService: 3500,
+                    inHouseCount: 2, inHouseSalary: 2200,
+                    outsourcedCount: 1, outsourcedSalary: 2700,
+                    oneTimeDance: 0, oneTimeSpeech: 0
+                }
+            }
+        };
+
+        function formatCurrency(value, currency, exchangeRate) {
+            const displayValue = currency === 'TWD' ? value * exchangeRate : value;
+            const locale = currency === 'TWD' ? 'zh-TW' : 'en-US';
+            return displayValue.toLocaleString(locale, { style: 'currency', currency, maximumFractionDigits: 0 });
+        }
+        
+        function createCards() {
+            Object.keys(roadmapData).forEach(key => {
+                const data = roadmapData[key];
+                const d = data.defaults;
+                const card = document.createElement('div');
+                card.id = `card-${key}`;
+                card.className = `bg-white p-5 rounded-xl shadow-lg border-t-4 ${data.borderColor} flex flex-col phase-card`;
+                
+                const inputsHTML = `
+                    <div class="input-area-grid">
+                        <div class="space-y-4">
+                             <div>
+                                <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">Goals & Deliverables (Quarterly)</h4>
+                                <div class="input-grid text-sm">
+                                    <label class="tooltip-label" for="inferences-${key}">AI Motions<span class="tooltip-trigger">?</span><span class="tooltip-text">Quarterly goal for the number of AI-generated motions.</span></label><input type="number" min="0" id="inferences-${key}" value="${d.quarterlyInferences}" class="input-sm">
+                                    <label class="tooltip-label" for="trainings-${key}">Model Trainings<span class="tooltip-trigger">?</span><span class="tooltip-text">Quarterly goal for the number of model retraining runs.</span></label><input type="number" min="0" id="trainings-${key}" value="${d.quarterlyTrainings}" class="input-sm">
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">One-Time Asset Purchase</h4>
+                                 <div class="input-grid text-sm">
+                                    <label class="tooltip-label" for="onetime_dance-${key}">Dance Library<span class="tooltip-trigger">?</span><span class="tooltip-text">One-time purchase of dance motion assets for this quarter.</span></label><input type="number" min="0" id="onetime_dance-${key}" value="${d.oneTimeDance}" class="input-sm">
+                                    <label class="tooltip-label" for="onetime_speech-${key}">Speech Library<span class="tooltip-trigger">?</span><span class="tooltip-text">One-time purchase of speech motion assets for this quarter.</span></label><input type="number" min="0" id="onetime_speech-${key}" value="${d.oneTimeSpeech}" class="input-sm">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                             <div>
+                                <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">AI & HR Unit Costs (Monthly)</h4>
+                                <div class="input-grid text-sm">
+                                    <label class="tooltip-label" for="video_service-${key}">Video Service<span class="tooltip-trigger">?</span><span class="tooltip-text">Monthly fee for the AI video generation service.</span></label><input type="number" id="video_service-${key}" value="${d.monthlyVideoService}" class="input-sm">
+                                    <label class="tooltip-label" for="training_cost-${key}">Cost/Training<span class="tooltip-trigger">?</span><span class="tooltip-text">GPU cost for a single training cycle.</span></label><input type="number" id="training_cost-${key}" value="${d.costPerTraining}" class="input-sm">
+                                    <label class="tooltip-label" for="inference_cost-${key}">Cost/Inference<span class="tooltip-trigger">?</span><span class="tooltip-text">GPU cost to generate one motion.</span></label><input type="number" id="inference_cost-${key}" value="${d.costPerInference}" step="0.0001" class="input-sm">
+                                    <label class="tooltip-label" for="inhouse_salary-${key}">In-house Salary<span class="tooltip-trigger">?</span><span class="tooltip-text">Average monthly salary per person.</span></label><input type="number" id="inhouse_salary-${key}" value="${d.inHouseSalary}" class="input-sm">
+                                    <label class="tooltip-label" for="outsourced_salary-${key}">Outsourced Fee<span class="tooltip-trigger">?</span><span class="tooltip-text">Average monthly fee per contractor.</span></label><input type="number" id="outsourced_salary-${key}" value="${d.outsourcedSalary}" class="input-sm">
+                                </div>
+                            </div>
+                             <div>
+                                <h4 class="font-semibold text-gray-700 mb-2 border-b pb-1">HR Headcount (Monthly)</h4>
+                                <div class="input-grid text-sm">
+                                    <label class="tooltip-label" for="inhouse_count-${key}">In-house Staff<span class="tooltip-trigger">?</span><span class="tooltip-text">Number of full-time employees.</span></label><input type="number" id="inhouse_count-${key}" value="${d.inHouseCount}" class="input-sm">
+                                    <label class="tooltip-label" for="outsourced_count-${key}">Outsourced Staff<span class="tooltip-trigger">?</span><span class="tooltip-text">Number of external contractors.</span></label><input type="number" id="outsourced_count-${key}" value="${d.outsourcedCount}" class="input-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                card.innerHTML = `
+                    <div class="flex flex-col h-full">
+                        <div class="mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">${data.phase}</h3>
+                            <ul class="text-sm text-gray-600 mt-2 list-disc list-inside space-y-1">
+                                ${data.strategy.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="flex-grow mb-4 bg-gray-50 p-4 rounded-lg border">
+                            ${inputsHTML}
+                        </div>
+                        <div class="mt-auto pt-4 border-t bg-indigo-50 text-center rounded-b-lg -m-5 mt-5 p-5">
+                            <div class="tooltip-label justify-center text-sm text-gray-600">
+                                Total Estimated Cost
+                                <span class="tooltip-trigger">?</span>
+                                <span class="tooltip-text">The total projected cost for this quarter based on the inputs above. Calculated as: (Sum of all Monthly Costs × 3) + One-Time Costs.</span>
+                            </div>
+                            <p id="total-${key}" class="text-2xl font-bold text-indigo-600">$0</p>
+                        </div>
+                    </div>
+                `;
+                roadmapCardsContainer.appendChild(card);
+            });
+        }
+
+        function calculateAndRender() {
+            const currency = document.getElementById('currency-selector').value;
+            const exchangeRate = parseFloat(document.getElementById('exchange_rate').value) || 1;
+            const costs = {};
+
+            Object.keys(roadmapData).forEach(key => {
+                const oneTimeDance = parseFloat(document.getElementById(`onetime_dance-${key}`).value) || 0;
+                const oneTimeSpeech = parseFloat(document.getElementById(`onetime_speech-${key}`).value) || 0;
+                const quarterlyTrainings = parseFloat(document.getElementById(`trainings-${key}`).value) || 0;
+                const costPerTraining = parseFloat(document.getElementById(`training_cost-${key}`).value) || 0;
+                const quarterlyInferences = parseFloat(document.getElementById(`inferences-${key}`).value) || 0;
+                const costPerInference = parseFloat(document.getElementById(`inference_cost-${key}`).value) || 0;
+                const monthlyVideoService = parseFloat(document.getElementById(`video_service-${key}`).value) || 0;
+                const inHouseCount = parseFloat(document.getElementById(`inhouse_count-${key}`).value) || 0;
+                const inHouseSalary = parseFloat(document.getElementById(`inhouse_salary-${key}`).value) || 0;
+                const outsourcedCount = parseFloat(document.getElementById(`outsourced_count-${key}`).value) || 0;
+                const outsourcedSalary = parseFloat(document.getElementById(`outsourced_salary-${key}`).value) || 0;
+
+                const oneTimeTotal = oneTimeDance + oneTimeSpeech;
+                const quarterlyAITotal = (quarterlyTrainings * costPerTraining) + (quarterlyInferences * costPerInference) + (monthlyVideoService * 3);
+                const quarterlyHRTotal = ((inHouseCount * inHouseSalary) + (outsourcedCount * outsourcedSalary)) * 3;
+                
+                const quarterTotal = quarterlyAITotal + quarterlyHRTotal + oneTimeTotal;
+                
+                costs[key] = quarterTotal;
+                document.getElementById(`total-${key}`).textContent = formatCurrency(quarterTotal, currency, exchangeRate);
+            });
+            
+            updateChart(costs);
+        }
+
+        function createChart() {
+            const ctx = document.getElementById('roadmapChart').getContext('2d');
+            const labels = Object.keys(roadmapData).map(id => `${id.split('-')[0]} Q${id.split('-')[1].charAt(1)}`);
+            
+            roadmapChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Estimated Cost',
+                        data: [],
+                        backgroundColor: ['#60a5fa', '#818cf8', '#c084fc', '#4ade80'],
+                        borderColor: ['#2563eb', '#4f46e5', '#7e22ce', '#16a34a'],
+                        borderWidth: 2,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false, responsive: true,
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + (v / 1000) + 'k' } } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const rawValue = context.raw;
+                                    const currency = document.getElementById('currency-selector').value;
+                                    const exchangeRate = parseFloat(document.getElementById('exchange_rate').value) || 1;
+                                    return `Total: ${formatCurrency(rawValue, currency, exchangeRate)}`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+        
+        function updateChart(costs) {
+            roadmapChart.data.datasets[0].data = Object.values(costs);
+            roadmapChart.update();
+        }
+        
+        window.addEventListener('load', () => {
+            createCards();
+            createChart();
+            calculateAndRender();
+            
+            const allInputs = document.querySelectorAll('#roadmap-cards-container input, #currency-selector, #exchange_rate');
+            allInputs.forEach(input => input.addEventListener('input', calculateAndRender));
+        });
+    </script>
+</body>
+</html>
