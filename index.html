@@ -358,7 +358,11 @@
         function calculateAndRender() {
             const currency = document.getElementById('currency-selector').value;
             const exchangeRate = parseFloat(document.getElementById('exchange_rate').value) || 1;
-            const costs = {};
+            const costs = {
+                aiCosts: {},
+                hrCosts: {},
+                assetCosts: {}
+            };
 
             Object.keys(roadmapData).forEach(key => {
                 const oneTimeDance = parseFloat(document.getElementById(`onetime_dance-${key}`).value) || 0;
@@ -373,13 +377,23 @@
                 const outsourcedCount = parseFloat(document.getElementById(`outsourced_count-${key}`).value) || 0;
                 const outsourcedSalary = parseFloat(document.getElementById(`outsourced_salary-${key}`).value) || 0;
 
-                const oneTimeTotal = oneTimeDance + oneTimeSpeech;
-                const quarterlyAITotal = (quarterlyTrainings * costPerTraining) + (quarterlyInferences * costPerInference) + (monthlyVideoService * 3);
-                const quarterlyHRTotal = ((inHouseCount * inHouseSalary) + (outsourcedCount * outsourcedSalary)) * 3;
+                // AI相关成本
+                const aiCosts = (quarterlyTrainings * costPerTraining) + 
+                              (quarterlyInferences * costPerInference) + 
+                              (monthlyVideoService * 3);
                 
-                const quarterTotal = quarterlyAITotal + quarterlyHRTotal + oneTimeTotal;
+                // 人力资源成本
+                const hrCosts = ((inHouseCount * inHouseSalary) + 
+                               (outsourcedCount * outsourcedSalary)) * 3;
                 
-                costs[key] = quarterTotal;
+                // 一次性资产购买成本
+                const assetCosts = oneTimeDance + oneTimeSpeech;
+                
+                costs.aiCosts[key] = aiCosts;
+                costs.hrCosts[key] = hrCosts;
+                costs.assetCosts[key] = assetCosts;
+                
+                const quarterTotal = aiCosts + hrCosts + assetCosts;
                 document.getElementById(`total-${key}`).textContent = formatCurrency(quarterTotal, currency, exchangeRate);
             });
             
@@ -394,28 +408,71 @@
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Total Estimated Cost',
-                        data: [],
-                        backgroundColor: ['#60a5fa', '#818cf8', '#c084fc', '#4ade80'],
-                        borderColor: ['#2563eb', '#4f46e5', '#7e22ce', '#16a34a'],
-                        borderWidth: 2,
-                        borderRadius: 5,
-                    }]
+                    datasets: [
+                        {
+                            label: 'AI Costs',
+                            data: [],
+                            backgroundColor: '#60a5fa',
+                            borderColor: '#2563eb',
+                            borderWidth: 1,
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'HR Costs',
+                            data: [],
+                            backgroundColor: '#818cf8',
+                            borderColor: '#4f46e5',
+                            borderWidth: 1,
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'Asset Costs',
+                            data: [],
+                            backgroundColor: '#c084fc',
+                            borderColor: '#7e22ce',
+                            borderWidth: 1,
+                            stack: 'Stack 0',
+                        }
+                    ]
                 },
                 options: {
-                    maintainAspectRatio: false, responsive: true,
-                    scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + (v / 1000) + 'k' } } },
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    const currency = document.getElementById('currency-selector').value;
+                                    const exchangeRate = parseFloat(document.getElementById('exchange_rate').value) || 1;
+                                    return formatCurrency(value, currency, exchangeRate);
+                                }
+                            }
+                        }
+                    },
                     plugins: {
-                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
                                     const rawValue = context.raw;
                                     const currency = document.getElementById('currency-selector').value;
                                     const exchangeRate = parseFloat(document.getElementById('exchange_rate').value) || 1;
-                                    return `Total: ${formatCurrency(rawValue, currency, exchangeRate)}`;
+                                    return `${context.dataset.label}: ${formatCurrency(rawValue, currency, exchangeRate)}`;
                                 }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
                             }
                         }
                     },
@@ -428,7 +485,9 @@
         }
         
         function updateChart(costs) {
-            roadmapChart.data.datasets[0].data = Object.values(costs);
+            roadmapChart.data.datasets[0].data = Object.values(costs.aiCosts);
+            roadmapChart.data.datasets[1].data = Object.values(costs.hrCosts);
+            roadmapChart.data.datasets[2].data = Object.values(costs.assetCosts);
             roadmapChart.update();
         }
         
