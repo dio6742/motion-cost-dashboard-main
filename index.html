@@ -342,12 +342,27 @@
                             ${inputsHTML}
                         </div>
                         <div class="mt-auto pt-4 border-t bg-indigo-50 text-center rounded-b-lg -m-5 mt-5 p-5">
-                            <div class="tooltip-label justify-center text-sm text-gray-600">
+                            <div class="tooltip-label justify-center text-sm text-gray-600 mb-2">
                                 Total Estimated Cost
                                 <span class="tooltip-trigger">?</span>
                                 <span class="tooltip-text">The total projected cost for this quarter based on the inputs above. Calculated as: (Sum of all Monthly Costs × 3) + One-Time Costs.</span>
                             </div>
-                            <p id="total-${key}" class="text-2xl font-bold text-indigo-600">$0</p>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">HR & Asset Costs:</span>
+                                    <span id="main-total-${key}" class="font-semibold text-indigo-600">$0</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600">AI Service Costs:</span>
+                                    <span id="ai-total-${key}" class="font-semibold text-blue-600">$0</span>
+                                </div>
+                                <div class="border-t border-indigo-200 pt-2 mt-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-700 font-medium">Total:</span>
+                                        <span id="total-${key}" class="text-2xl font-bold text-indigo-600">$0</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -361,7 +376,7 @@
             const costs = {
                 hrCosts: {},
                 assetCosts: {},
-                aiServiceCosts: {}  // 新增AI服务成本类别
+                aiServiceCosts: {}
             };
 
             Object.keys(roadmapData).forEach(key => {
@@ -393,8 +408,14 @@
                 costs.assetCosts[key] = assetCosts;
                 costs.aiServiceCosts[key] = aiServiceCosts;
                 
-                // 总成本（不包含AI服务成本）
-                const quarterTotal = hrCosts + assetCosts;
+                // 主要成本（不包含AI服务成本）
+                const mainTotal = hrCosts + assetCosts;
+                // 总成本（包含所有成本）
+                const quarterTotal = mainTotal + aiServiceCosts;
+
+                // 更新显示
+                document.getElementById(`main-total-${key}`).textContent = formatCurrency(mainTotal, currency, exchangeRate);
+                document.getElementById(`ai-total-${key}`).textContent = formatCurrency(aiServiceCosts, currency, exchangeRate);
                 document.getElementById(`total-${key}`).textContent = formatCurrency(quarterTotal, currency, exchangeRate);
             });
             
